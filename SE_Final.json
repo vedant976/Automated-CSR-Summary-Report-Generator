@@ -1,0 +1,339 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -848,
+        64
+      ],
+      "id": "14bab7db-cd0a-43a1-aea3-c450a9b84bac",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/data/input/*.pdf",
+        "options": {
+          "dataPropertyName": "data"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -640,
+        64
+      ],
+      "id": "797cdb6e-ab73-4618-a91f-40a9e6de6bff",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -432,
+        64
+      ],
+      "id": "da5f80db-7d16-4757-8886-9c25f19ebddb",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -272,
+        192
+      ],
+      "id": "e3e3e3b1-c300-4c5c-ae35-5a97773107c2",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7941975c-70d3-4ccf-a5b2-54b195db6dd0",
+              "name": "fileName",
+              "value": "={{ $('Read/Write Files from Disk').item.json.fileName }}",
+              "type": "string"
+            },
+            {
+              "id": "ec324101-2452-4351-ae01-83dc05608466",
+              "name": "pdfText",
+              "value": "={{ $('Extract from File').item.json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -224,
+        32
+      ],
+      "id": "50042437-b1b0-4f78-8da4-95077a330cec",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// The data is already a perfect JSON object from the LLM.\n// We just need to get it.\nconst parsedData = $('Basic LLM Chain').item.json;\n\n// Add the original FileName from the 'Edit Fields' node.\nparsedData.fileName = $('Edit Fields').item.json.fileName;\n\n// Return the final, combined object.\nreturn parsedData;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        32
+      ],
+      "id": "a8c44569-2c13-4144-9afd-65e91f34bcc7",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "/data/output/CSR_Summaries.csv",
+        "options": {
+          "append": true
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        688,
+        32
+      ],
+      "id": "db63e6c9-330a-474d-8160-b751eba160a5",
+      "name": "Read/Write Files from Disk1",
+      "alwaysOutputData": false,
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are an expert financial analyst specializing in Corporate Social Responsibility (CSR) reports. Analyze the following text extracted from a company's CSR report. Extract the following information and provide the output ONLY in a valid, minified JSON format with the specified keys. Do not add any introductory text, explanations, or markdown formatting.  Required Keys: - \"companyName\": The full, official name of the company. - \"csrFocusAreas\": A comma-separated string of the main focus areas (e.g., 'Education, Environment, Healthcare'). - \"totalCsrSpend\": The total CSR expenditure mentioned. Extract the value and currency (e.g., '₹ 150 Crore', '$ 2.5 Million'). If not found, use 'Not specified'. - \"keyInitiativesSummary\": A concise 2-sentence summary of the main projects or initiatives described. - \"overallStrategySynopsis\": A concise 2-sentence synopsis of the company's overall CSR strategy, vision, or goals.",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are an expert financial analyst specializing in Corporate Social Responsibility (CSR) reports. Analyze the following text extracted from a company's CSR report. Extract the following information and provide the output ONLY in a valid, minified JSON format with the specified keys. Do not add any introductory text, explanations, or markdown formatting.  Required Keys: - \"companyName\": The full, official name of the company. - \"csrFocusAreas\": A comma-separated string of the main focus areas (e.g., 'Education, Environment, Healthcare'). - \"totalCsrSpend\": The total CSR expenditure mentioned. Extract the value and currency (e.g., '₹ 150 Crore', '$ 2.5 Million'). If not found, use 'Not specified'. - \"keyInitiativesSummary\": A concise 2-sentence summary of the main projects or initiatives described. - \"overallStrategySynopsis\": A concise 2-sentence synopsis of the company's overall CSR strategy, vision, or goals."
+            },
+            {
+              "type": "HumanMessagePromptTemplate",
+              "message": "={{ $('Edit Fields').item.json.pdfText }}"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -48,
+        32
+      ],
+      "id": "91b49154-6f55-41c3-ad38-b5fb3f68daef",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "llama3:latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmOllama",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        384
+      ],
+      "id": "912cbd3c-19ce-43fd-bf58-e65802c11ef2",
+      "name": "Ollama Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "4BKSO1tig4mdLwSB",
+          "name": "My Ollama"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"companyName\": {\n      \"type\": \"string\",\n      \"description\": \"The full, official name of the company.\"\n    },\n    \"csrFocusAreas\": {\n      \"type\": \"string\",\n      \"description\": \"A comma-separated string of the main focus areas (e.g., 'Education, Environment, Healthcare').\"\n    },\n    \"totalCsrSpend\": {\n      \"type\": \"string\",\n      \"description\": \"The total CSR expenditure mentioned. Extract the value and currency (e.g., '₹ 150 Crore', '$ 2.5 Million'). If not found, use 'Not specified'.\"\n    },\n    \"keyInitiativesSummary\": {\n      \"type\": \"string\",\n      \"description\": \"A concise 2-sentence summary of the main projects or initiatives described.\"\n    },\n    \"overallStrategySynopsis\": {\n      \"type\": \"string\",\n      \"description\": \"A concise 2-sentence synopsis of the company's overall CSR strategy, vision, or goals.\"\n    }\n  },\n  \"required\": [\n    \"companyName\",\n    \"csrFocusAreas\",\n    \"totalCsrSpend\",\n    \"keyInitiativesSummary\",\n    \"overallStrategySynopsis\"\n  ]\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        96,
+        240
+      ],
+      "id": "4946730a-1f5a-48ec-8c9e-1e1e469024fb",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "options": {
+          "headerRow": true
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        32
+      ],
+      "id": "0ff66d5c-4e86-4fac-801d-13d83ff96685",
+      "name": "Convert to File"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk1": {
+      "main": [
+        []
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "eb70b903-ddbe-4c31-9b15-968ed7842caa",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "29d85c3531760de03e72381c3e411ec29fc0e40f4955a59670363d70a1897ee1"
+  },
+  "id": "RG0mKs09590x0qGw",
+  "tags": []
+}
