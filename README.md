@@ -1,4 +1,5 @@
 # Automated-CSR-Summary-Report-Generator
+
 A course level project, powered by Agentic AI, which generates CSR Summaries.
 This particular project contains the JSON code for the AI Workflow which is implemented in n8n through Docker.
 The file can be imported into the n8n and user can get the workflow directly on their screens.
